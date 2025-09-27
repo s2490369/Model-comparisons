@@ -5,7 +5,11 @@ show(dataset)
 
 dataset$KM36 <- as.numeric(dataset$`Kaplan-Meier survival 36m`)
 
-
+dep_cols <- c("Deprivation quintile 1 - most deprived",
+              "Deprivation quintile 2",
+              "Deprivation quintile 3",
+              "Deprivation quintile 4",
+              "Deprivation quintile 5 - least deprived")
 dataset[dep_cols] <- lapply(dataset[dep_cols], function(x) as.numeric(as.character(x)))
 
 
