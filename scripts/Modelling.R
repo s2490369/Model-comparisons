@@ -4,6 +4,8 @@ dataset <- read_csv("data/processed/cleaned_data.csv")
 show(dataset)
 
 dataset$KM36 <- as.numeric(dataset$`Kaplan-Meier survival 36m`)
+dataset$Gender <-as.factor(dataset%Gender)
+dataset$Ethnict <-as.factor(dataset%Ethnicity)
 
 dep_cols <- c("Deprivation quintile 1 - most deprived",
               "Deprivation quintile 2",
@@ -22,6 +24,6 @@ dataset$Dep_Avg <- apply(dep_matrix, 1, function(x) {
 })
 
 ggplot(dataset,aes(x=Dep_Avg,y=KM36)) +
-  geom_point()
-
-
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE, color = "pink" )+
+  theme_minimal()
