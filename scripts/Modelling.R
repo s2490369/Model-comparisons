@@ -3,15 +3,32 @@ library(ggplot2)
 dataset <- read_csv("data/processed/cleaned_data.csv")
 show(dataset)
 
-dataset$KM36 <- as.numeric(dataset$`Kaplan-Meier survival 36m`)
-dataset$Gender <-as.factor(dataset%Gender)
-dataset$Ethnict <-as.factor(dataset%Ethnicity)
+dataset$KM36 <- as.numeric(dataset$'Kaplan-Meier survival 36 m')
+dataset$Gender <- factor(dataset$Gender, levels = c("Male", "Female"))
+
+ethnicity_cols <- c("names of ethnicity colls")
+
+dataset[ethnicity_cols] <- lapply(dataset[ethnicity_cols], function(x) as.numeric(as.character(x)))
+
+dataset$EthnicityFactor <- apply(dataset[ethnicity_cols], 1, function(row){
+  ethnicity_cols[which.max(row)]
+})
+
+
+dataset$EthnicityFactor <- factor(dataset$EthnicityFactor)
+
+model <- lm(KM36 ~ Dep_avg + Gender + EthnicityFactor, data = dataset)
+summary(model)
+
+sigma(model)
+
 
 dep_cols <- c("Deprivation quintile 1 - most deprived",
               "Deprivation quintile 2",
               "Deprivation quintile 3",
               "Deprivation quintile 4",
               "Deprivation quintile 5 - least deprived")
+
 dataset[dep_cols] <- lapply(dataset[dep_cols], function(x) as.numeric(as.character(x)))
 
 
