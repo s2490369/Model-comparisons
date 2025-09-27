@@ -1,14 +1,22 @@
+#Define packages - tidyverse contains usefull packages
+#ggplot2 is a graphing package
+
 library(tidyverse)
 library(ggplot2)
+
+#Import data file
 dataset <- read_csv("data/processed/cleaned_data.csv")
 show(dataset)
 
+#Create a data set of numerical entries from survival change (%) at 36 Months
 dataset$KM36 <- as.numeric(dataset$'Kaplan-Meier survival 36m')
+
+#Create a data set of categorical data of Gender
 dataset$Gender <- factor(dataset$Gender, levels = c("Male", "Female"))
 
 
 
-
+#Creates a vector which contains entries ....
 dep_cols <- c("Deprivation quintile 1 - most deprived",
               "Deprivation quintile 2",
               "Deprivation quintile 3",
