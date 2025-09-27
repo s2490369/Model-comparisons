@@ -49,7 +49,14 @@ dataset$EthnicityFactor <- as.character(apply(dataset[ethnicity_cols], 1, get_do
 
 dataset$EthnicityFactor <- factor(dataset$EthnicityFactor)
 
-model <- lm(KM36 ~ Dep_Avg + Gender + EthnicityFactor, data = dataset)
+dataset <- dataset[dataset[,25]=="Ethnicity - White",]
+
+dataset$TotalKnown <- rowSums(dataset[, ethnicity_cols[1:6]], na.rm = TRUE)  # sum all except Unknown
+
+# Compute proportion White (ignoring Unknown)
+dataset$PropWhite <- dataset$`Ethnicity - White` / dataset$TotalKnown
+
+model <- lm(KM36 ~ Dep_Avg + Gender + PropWhite, data = dataset)
 summary(model)
 
 sigma(model)
