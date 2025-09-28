@@ -1,10 +1,11 @@
 #Define packages - tidyverse contains useful packages
 #ggplot2 is a graphing package
 #mgcv is used for the GAM plot
-
+#randomForest library for a random forest plot
 library(tidyverse)
 library(ggplot2)
 library(mgcv)
+library(randomForest)
 
 #Import data file
 dataset <- read_csv("data/processed/cleaned_data.csv")
@@ -77,3 +78,14 @@ summary(model)
 #Store and display the results of a GAM model
 gam_model <- gam(KM36 ~ s(Dep_Avg) + Gender + PropWhite, data = dataset)
 summary(gam_model)
+
+
+#Random forest cannot work with NAs so we remove them
+dataset_rf <- na.omit(dataset[, c("KM36", "Dep_Avg", "Gender", "PropWhite")])
+#Note that the dataset loses about 50% of its entries
+
+#Store and display the results of the random forest model
+#Chose ntree=1000 since MSE stopped increasing significantly past this
+#Chose mtry=2 since there are only three variables
+RF_model <- randomForest(KM36 ~ Dep_Avg + Gender + PropWhite, data=dataset_rf, ntree=1000,mtry=2,importance=TRUE)
+print(RF_model)
