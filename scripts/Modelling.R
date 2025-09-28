@@ -1,12 +1,13 @@
 #Define packages - tidyverse contains useful packages
 #ggplot2 is a graphing package
+#mgcv is used for the GAM plot
 
 library(tidyverse)
 library(ggplot2)
+library(mgcv)
 
 #Import data file
 dataset <- read_csv("data/processed/cleaned_data.csv")
-show(dataset)
 
 #Create a data set of numerical entries from survival change (%) at 36 Months
 dataset$KM36 <- as.numeric(dataset$'Kaplan-Meier survival 36m')
@@ -73,4 +74,6 @@ dataset$PropWhite <- dataset$`Ethnicity - White` / dataset$TotalKnown
 model <- lm(KM36 ~ Dep_Avg + Gender + PropWhite, data = dataset)
 summary(model)
 
-
+#Store and display the results of a GAM model
+gam_model <- gam(KM36 ~ s(Dep_Avg) + Gender + PropWhite, data = dataset)
+summary(gam_model)
