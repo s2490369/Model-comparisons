@@ -14,8 +14,8 @@ __pycache__/
 .ipynb_checkpoints/
 
 # Results
-results/*.csv
-results/plots/*
+!results/*.csv
+!results/plots/*
 
 
 .Rproj.user
