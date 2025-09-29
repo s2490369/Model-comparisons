@@ -93,17 +93,31 @@ print(RF_model)
 #Store residual data and plot with a straight line on y=0 to show where residuals should lie
 lm_residual <- resid(lm_model)
 lm_fitted <- fitted(lm_model)
-plot(lm_fitted, lm_residual, xlab="Predicted survival", ylab="Residuals", main="Linear model residuals") +
-  abline(h=0,col='green')
+dataframe_1 <- data.frame(Fitted=lm_fitted, Residuals=lm_residual)
+plot_1<-ggplot(data=dataframe_1,aes(x=Fitted, y=Residuals))+
+  geom_point() +
+  labs(title = "Linear model residuals", x= "Predicted survival", y= "Residuals") +
+  geom_hline(yintercept = 0,color='green')
+ggsave("results/plots/linear_model_plot.png", plot = plot_1, width = 8, height = 6)
+
 
 #Residuals plot for GAM model
 gam_residual <- resid(gam_model)
 gam_fitted <- fitted(gam_model)
-plot(gam_fitted, gam_residual, xlab="Predicted survival", ylab="Residuals", main="GAM model residuals") +
-  abline(h=0,col='green')
+dataframe_2 <- data.frame(Fitted=gam_fitted, Residuals=gam_residual)
+plot_2<-ggplot(data=dataframe_2,aes(x=Fitted, y=Residuals))+
+  geom_point() +
+  labs(title = "Linear model residuals", x= "Predicted survival", y= "Residuals") +
+  geom_hline(yintercept = 0,color='green')
+ggsave("results/plots/GAM_model_plot.png", plot = plot_2, width = 8, height = 6)
+
 
 #Residuals plot for RF model
 rf_residual <- RF_model$predicted
 rf_fitted <- dataset_rf$KM36
-plot(rf_fitted, rf_residual, xlab="Predicted survival", ylab="Residuals", main="Random forest model residuals") +
-  abline(h=0,col='green')
+dataframe_3 <- data.frame(Fitted=rf_fitted, Residuals=rf_residual)
+plot_3<-ggplot(data=dataframe_3,aes(x=Fitted, y=Residuals))+
+  geom_point() +
+  labs(title = "Linear model residuals", x= "Predicted survival", y= "Residuals") +
+  geom_hline(yintercept = 0,color='green')
+ggsave("results/plots/RF_model_plot.png", plot = plot_3, width = 8, height = 6)
