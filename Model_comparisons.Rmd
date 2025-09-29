@@ -1,0 +1,158 @@
+---
+title: "Comparing Models On Surival Trends For Skin Cancer"
+output: html_document
+---
+## Project Motivation:
+The goal of this project is to compare a few different multivariable models on how well they predict survival rates for skin cancer. NHS and other health data are often difficult to model accurately due to many factors contributing to the results, as well as some randomness that can't necessarily be predicted. We were interested in seeing how a few models stand up when dealing with such data sets.  
+  
+We will be looking at three factors towards predicting the survival rate - gender, ethnicity and level of deprivation. The survival rate is based on the Kaplain-meier 36 month survival rate, and we took the average for each datapoint. Gender was a binary factor taking Female or other for simplicity. Ethnicity was used as a proportion of white to non-white - a factor than could have some determination to the survival outcome. The level of deprivation was taken on an average scale of most deprived to least deprived (1-5).  
+  
+After creating each model using the same three variables for prediction, we should have a fair test to see which model is the most effective.  
+  
+## Data:
+We took our data from an open source data set on cancer published by the nhs containing data from 2013 to 2022, which can be found here: "https://digital.nhs.uk/ndrs/data/data-outputs/cancer-data-hub/get-data-out". This data set contained information on all types of cancer recorded in groups.  
+  
+The columns used in our analysis were: 1,2,3,15,17,18,21,69,70,71,72,73,74,75,76,77,78,79,80,106,198, which includes to KM 36 months survival, ethnicities, gender and deprivation. We also filtered by rows to only select the skin cancer cases, by filtering through column 1 and 2.  
+  
+TO pre-process our data before use, we had to change the ethnicities to a proportion, this involved filtering out some rows where most participants had unknown ethnicity, as the data here would not have been complete. Additionally, since the data was stored in a wide format, we then took total white ethnicity divided  by total participants in each row to create a new column for proportion of white ethnicity. For the deprivation, we had to make a similar change where we ran the set of five columns for each ethnicity group into a function that gave the average ethnicity as a range from 1 to 5. We also converted the gender into a factor and converted the survival rate to numeric.  
+  
+The libraries used in R-studio were: tidyverse (for data cleaning), ggplot2 (for graphing and modelling), mgcv (for modelling) and randomForest (for modelling).  
+  
+## Methods:
+We used the following modelling methods for our comparison: Linear regression model, generalised additive model (GAM), and random forest model. The linear regression model provides a good baseline and allows us to test the data for linear trends. The GAM then expands on this by allowing for non-linearity in the relationships, which could give a better prediction if the effect is non-linear. Then the random forest model takes a machine learning approach by combining the outputs of an array of decision trees to find a potentially complex relationship between the variables and outcome.  
+  
+## Results: 
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(mgcv)
+library(randomForest)
+#Import data file
+dataset <- read_csv("data/processed/cleaned_data.csv")
+
+#Create a data set of numerical entries from survival change (%) at 36 Months
+dataset$KM36 <- as.numeric(dataset$'Kaplan-Meier survival 36m')
+
+#Create a data set of categorical data of Gender
+dataset$Gender <- factor(dataset$Gender, levels = c("Male", "Female"))
+
+#Creates a vector which contains column names
+dep_cols <- c("Deprivation quintile 1 - most deprived",
+              "Deprivation quintile 2",
+              "Deprivation quintile 3",
+              "Deprivation quintile 4",
+              "Deprivation quintile 5 - least deprived")
+
+#We then create a subset of the data set which now contains the deprivation data numerically
+dataset[dep_cols] <- lapply(dataset[dep_cols], function(x) as.numeric(as.character(x)))
+
+#Converts that subset to a matrix for better handling
+dep_matrix <- as.matrix(dataset[dep_cols])
+
+#Initialize a numerical scale to represent each level of deprivation
+dep_scores <- 1:5
+
+#We then use a simple function which calculates the mean deprivation for each row and stores it as a new column
+dataset$Dep_Avg <- apply(dep_matrix, 1, function(x) {
+  sum(x * dep_scores, na.rm = TRUE) / sum(x, na.rm = TRUE)
+})
+
+#Now we need to do a similar thing so we can work with ethnicity, below we are trying to use proportion of white ethnicity as a factor
+#Creates a vector to contain column names
+ethnicity_cols <- c("Ethnicity - White","Ethnicity - Asian excl Chinese","Ethnicity - Black", "Ethnicity - Chinese", "Ethnicity - Mixed", "Ethnicity - Other", "Ethnicity - Unknown")
+
+#Now creating a subset which contains the ethnicity data numerically
+dataset[ethnicity_cols] <- lapply(dataset[ethnicity_cols], function(x) as.numeric(as.character(x)))
+
+#Using the which.max function to find the dominant ethnicity in each group
+get_dominant_ethnicity <- function(row) {
+  # replace NAs with -Inf so they are ignored by which.max
+  row[is.na(row)] <- -Inf
+  ethnicity_cols[which.max(row)]
+}
+
+#Now storing the dominant ethnicity in a new column
+dataset$EthnicityFactor <- as.character(apply(dataset[ethnicity_cols], 1, get_dominant_ethnicity))
+#After inspecting this column, dominant ethnicity was either white or unknown, unknown ethnicity often meant no data recorded
+#We therefore filtered out the rows with unknown dominant ethnicity
+dataset <- dataset[dataset[,25]=="Ethnicity - White",]
+
+#Create a new column that stores the total number of people in the group with known ethnicity
+dataset$TotalKnown <- rowSums(dataset[, ethnicity_cols[1:6]], na.rm = TRUE)  # sum all except Unknown
+
+#Compute the proportion of White ethnicity in each row and store as a new column (ignoring Unknown)
+dataset$PropWhite <- dataset$`Ethnicity - White` / dataset$TotalKnown
+
+#We have now represented our three factors in a way that can be used in a predictive model for survival rate of each group
+
+#Store and display the results of a multivariable linear regression model
+lm_model <- lm(KM36 ~ Dep_Avg + Gender + PropWhite, data = dataset)
+
+
+#Store and display the results of a GAM model
+gam_model <- gam(KM36 ~ s(Dep_Avg) + Gender + PropWhite, data = dataset)
+
+
+
+#Random forest cannot work with NAs so we remove them
+dataset_rf <- na.omit(dataset[, c("KM36", "Dep_Avg", "Gender", "PropWhite")])
+#Note that the dataset loses about 50% of its entries
+
+#Store and display the results of the random forest model
+#Chose ntree=1000 since MSE stopped increasing significantly past this
+#Chose mtry=2 since there are only three variables
+RF_model <- randomForest(KM36 ~ Dep_Avg + Gender + PropWhite, data=dataset_rf, ntree=1000,mtry=2,importance=TRUE)
+
+
+#Store residual data and plot with a straight line on y=0 to show where residuals should lie
+lm_residual <- resid(lm_model)
+lm_fitted <- fitted(lm_model)
+dataframe_1 <- data.frame(Fitted=lm_fitted, Residuals=lm_residual)
+plot_1<-ggplot(data=dataframe_1,aes(x=Fitted, y=Residuals))+
+  geom_point() +
+  labs(title = "Linear model residuals", x= "Predicted survival", y= "Residuals") +
+  geom_hline(yintercept = 0,color='green')
+
+
+
+#Residuals plot for GAM model
+gam_residual <- resid(gam_model)
+gam_fitted <- fitted(gam_model)
+dataframe_2 <- data.frame(Fitted=gam_fitted, Residuals=gam_residual)
+plot_2<-ggplot(data=dataframe_2,aes(x=Fitted, y=Residuals))+
+  geom_point() +
+  labs(title = "Generalised additive model residuals", x= "Predicted survival", y= "Residuals") +
+  geom_hline(yintercept = 0,color='green')
+
+#Residuals plot for RF model
+rf_residual <- RF_model$predicted
+rf_fitted <- dataset_rf$KM36
+dataframe_3 <- data.frame(Fitted=rf_fitted, Residuals=rf_residual)
+plot_3<-ggplot(data=dataframe_3,aes(x=Fitted, y=Residuals))+
+  geom_point() +
+  labs(title = "Random forest model residuals", x= "Predicted survival", y= "Residuals") +
+  geom_hline(yintercept = 0,color='green')
+
+```
+```{r message=FALSE, warning=FALSE}
+summary(lm_model)
+print(plot_1)
+summary(gam_model)
+print(plot_2)
+print(RF_model)
+print(plot_3)
+```
+  
+## Discussion:
+After reviewing our models, we got an expected level of variance explained by each model given the complexity of dealing with health data.  
+  
+The linear regression model gave us an R-squared value of 0.026 which suggests only about 2.6% of variation is explained by the model, which we can expect to be low. The model therefore did capture some trend between the variables but assumpions based off this trend are limited and not reliable.  
+  
+The GAM gave us an R-squared value of 0.032 which suggests that more variation was explained compared to the linear model, but only by a small margin. This could indicate that the GAM found a non-linear relationship that was better than just using the linear relationship in our prediction. Once again, using this model for predictions would be limited but it does help to show some correlations.  
+  
+Finally, the random forest explained around 2.8% of variance. Despite not increasing the prediction value compared to the other models, there is still value in exploring the importance of each variable to better refine future models. However, in order for the model to work, NAs needed to be removed from the data causing a loss of roughly 50% of the rows.
+  
+## Conclusion:
+Based on the results of this project, we found that the actual difference in predictive power of each model was very slight and likely not suggestive that any of these models would always be better for large datasets like the one used. However, each model did have it's own benefits when it comes to interpreting trends in the data. The linear regression model is very simple to understand and provides the best linear relationship between our variables, this allowed us to see the positive relationship between deprivation and survival rate. On the other hand, the GAM suggested that a non-linear model might actually better represent the relationship compared to a linear one and would therefore be more useful for making predictions on the data. Finally, the random forest model was more restricted and difficult to compare to to its inability to handle data that the others could.  
+  
+In future projects we will aim to try more models on data with more explanatory variables and hopefully build up a better comparison between different models on large data sets.
