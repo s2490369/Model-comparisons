@@ -73,7 +73,7 @@ dataset$PropWhite <- dataset$`Ethnicity - White` / dataset$TotalKnown
 
 #Store and display the results of a multivariable linear regression model
 lm_model <- lm(KM36 ~ Dep_Avg + Gender + PropWhite, data = dataset)
-summary(model)
+summary(lm_model)
 
 #Store and display the results of a GAM model
 gam_model <- gam(KM36 ~ s(Dep_Avg) + Gender + PropWhite, data = dataset)
@@ -107,7 +107,7 @@ gam_fitted <- fitted(gam_model)
 dataframe_2 <- data.frame(Fitted=gam_fitted, Residuals=gam_residual)
 plot_2<-ggplot(data=dataframe_2,aes(x=Fitted, y=Residuals))+
   geom_point() +
-  labs(title = "Linear model residuals", x= "Predicted survival", y= "Residuals") +
+  labs(title = "Generalised additive model residuals", x= "Predicted survival", y= "Residuals") +
   geom_hline(yintercept = 0,color='green')
 ggsave("results/plots/GAM_model_plot.png", plot = plot_2, width = 8, height = 6)
 
@@ -118,6 +118,6 @@ rf_fitted <- dataset_rf$KM36
 dataframe_3 <- data.frame(Fitted=rf_fitted, Residuals=rf_residual)
 plot_3<-ggplot(data=dataframe_3,aes(x=Fitted, y=Residuals))+
   geom_point() +
-  labs(title = "Linear model residuals", x= "Predicted survival", y= "Residuals") +
+  labs(title = "Random forest model residuals", x= "Predicted survival", y= "Residuals") +
   geom_hline(yintercept = 0,color='green')
 ggsave("results/plots/RF_model_plot.png", plot = plot_3, width = 8, height = 6)
