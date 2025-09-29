@@ -72,7 +72,7 @@ dataset$PropWhite <- dataset$`Ethnicity - White` / dataset$TotalKnown
 #We have now represented our three factors in a way that can be used in a predictive model for survival rate of each group
 
 #Store and display the results of a multivariable linear regression model
-model <- lm(KM36 ~ Dep_Avg + Gender + PropWhite, data = dataset)
+lm_model <- lm(KM36 ~ Dep_Avg + Gender + PropWhite, data = dataset)
 summary(model)
 
 #Store and display the results of a GAM model
@@ -89,3 +89,21 @@ dataset_rf <- na.omit(dataset[, c("KM36", "Dep_Avg", "Gender", "PropWhite")])
 #Chose mtry=2 since there are only three variables
 RF_model <- randomForest(KM36 ~ Dep_Avg + Gender + PropWhite, data=dataset_rf, ntree=1000,mtry=2,importance=TRUE)
 print(RF_model)
+
+#Store residual data and plot with a straight line on y=0 to show where residuals should lie
+lm_residual <- resid(lm_model)
+lm_fitted <- fitted(lm_model)
+plot(lm_fitted, lm_residual, xlab="Predicted survival", ylab="Residuals", main="Linear model residuals") +
+  abline(h=0,col='green')
+
+#Residuals plot for GAM model
+gam_residual <- resid(gam_model)
+gam_fitted <- fitted(gam_model)
+plot(gam_fitted, gam_residual, xlab="Predicted survival", ylab="Residuals", main="GAM model residuals") +
+  abline(h=0,col='green')
+
+#Residuals plot for RF model
+rf_residual <- RF_model$predicted
+rf_fitted <- dataset_rf$KM36
+plot(rf_fitted, rf_residual, xlab="Predicted survival", ylab="Residuals", main="Random forest model residuals") +
+  abline(h=0,col='green')
